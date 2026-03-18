@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beekeeping Pro - Color Coded Dots</title>
+    <title>Beekeeping Pro - Static Dots Fixed</title>
     <script src="https://www.gstatic.com/charts/loader.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #ffffff; --accent: #1a73e8; --border: #333; }
@@ -128,7 +128,6 @@
             dataTable.addColumn('string', 'Time');
             dataTable.addColumn('number', conf.label);
             
-            // Προσθήκη στήλης για το στυλ (χρώμα βούλας) αν είναι το field5
             if (conf.specialDots) {
                 dataTable.addColumn({type: 'string', role: 'style'});
             }
@@ -137,8 +136,8 @@
                 let v = parseFloat(f[key]);
                 if (!isNaN(v)) {
                     if (conf.specialDots) {
-                        // Πράσινο αν v >= 0, Κόκκινο αν v < 0
-                        const dotColor = v >= 0 ? 'point { size: 6; fill-color: #4caf50; }' : 'point { size: 6; fill-color: #ff5252; }';
+                        // Πράσινο αν v >= 0, Κόκκινο αν v < 0, Μεγαλύτερη βούλα (size:7)
+                        const dotColor = v >= 0 ? 'point { size: 7; fill-color: #4caf50; stroke-width: 0; }' : 'point { size: 7; fill-color: #ff5252; stroke-width: 0; }';
                         dataTable.addRow([new Date(f.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), v, dotColor]);
                     } else {
                         dataTable.addRow([new Date(f.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), v]);
@@ -148,13 +147,14 @@
 
             new google.visualization.LineChart(document.getElementById('chart_'+key)).draw(dataTable, {
                 backgroundColor: 'transparent', curveType: 'function', legend: 'none',
-                pointSize: conf.specialDots ? 0 : 5, // Αν είναι specialDots, το pointSize ορίζεται από το style role
+                pointSize: 5, // Βασικό μέγεθος για όλα τα γραφήματα
                 hAxis: { textPosition: 'none' }, vAxis: { gridlines: {color:'#2a2a2a'}, textStyle: {color:'#555'} },
-                colors: [conf.color], chartArea: {width:'95%', height:'80%'}
+                // Η ΓΡΑΜΜΗ ΣΤΟ FIELD 5 ΓΙΝΕΤΑΙ ΓΚΡΙ/ΜΠΛΕ (#607d8b)
+                colors: [conf.specialDots ? '#607d8b' : conf.color], 
+                chartArea: {width:'95%', height:'80%'}
             });
         }
         setInterval(() => { loadData(); updateHistory(); }, 60000);
     </script>
 </body>
-    </html>
-    
+</html>
