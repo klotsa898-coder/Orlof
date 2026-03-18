@@ -3,29 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beekeeping Pro - 6 Fields Analysis</title>
+    <title>Beekeeping Pro - Color Coded Dots</title>
     <script src="https://www.gstatic.com/charts/loader.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #ffffff; --accent: #1a73e8; --border: #333; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
-        
-        /* Κεντρικό Banner 24h */
         .main-yield-banner { background: linear-gradient(135deg, #1e1e1e, #2d2d2d); padding: 20px; border-radius: 15px; margin-bottom: 15px; text-align: center; border: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .main-yield-val { font-size: 2.8em; font-weight: bold; }
         .main-yield-label { font-size: 0.7em; color: #888; letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase; }
-
-        /* Banner Ιστορικού 7 Ημερών */
         .history-container { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 10px; }
         .history-day { background: var(--card); min-width: 85px; padding: 12px 8px; border-radius: 12px; border: 1px solid var(--border); text-align: center; flex: 1; }
         .hist-date { font-size: 0.65em; color: #888; margin-bottom: 4px; }
         .hist-val { font-size: 1em; font-weight: bold; }
-
         .last-update { font-size: 0.75em; color: #ffca28; text-align: center; margin-bottom: 10px; background: #252525; padding: 8px; border-radius: 10px; border: 1px solid #444; }
-        
         .toolbar { background: var(--card); padding: 10px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
         .grid-container { display: grid; grid-template-columns: 1fr; gap: 15px; }
         @media(min-width: 600px) { .grid-container { grid-template-columns: 1fr 1fr; } }
-        
         .card { background: var(--card); border-radius: 15px; padding: 15px; border-top: 5px solid var(--accent); }
         .header-flex { display: flex; justify-content: space-between; align-items: center; }
         h3 { margin: 0; font-size: 0.85em; color: #888; text-transform: uppercase; }
@@ -62,10 +55,9 @@
         const channelID = '2061494'; 
         const readAPIKey = '0P6LKRYHCCU5TFKT';
 
-        // Η νέα σειρά πεδίων που ζήτησες
         const fieldConfig = {
             'field1': { label: 'Βάρος', unit: 'gr', icon: '⚖️', color: '#ff5252', decimals: 0 },
-            'field5': { label: 'Διαφορά (gr)', unit: 'gr', icon: '📉', color: '#ff4081', decimals: 0 },
+            'field5': { label: 'Διαφορά (gr)', unit: 'gr', icon: '📉', color: '#ff4081', decimals: 0, specialDots: true },
             'field2': { label: 'Υγρασία', unit: '%', icon: '💧', color: '#448aff', decimals: 1 },
             'field3': { label: 'Θερμοκρασία', unit: '°C', icon: '🌡️', color: '#4caf50', decimals: 1 },
             'field4': { label: 'Μπαταρία', unit: 'V', icon: '🔋', color: '#ffc107', decimals: 2 },
@@ -91,26 +83,20 @@
                     return parseFloat(closest.field1);
                 };
 
-                // Ενημέρωση Κεντρικού Banner
                 const diffMain = (getWeightAt21(new Date()) - getWeightAt21(new Date().setDate(new Date().getDate()-1))).toFixed(0);
                 const mainEl = document.getElementById('24hYieldMain');
                 mainEl.innerText = `${diffMain > 0 ? '+' : ''}${diffMain} gr`;
                 mainEl.style.color = diffMain >= 0 ? '#4caf50' : '#ff5252';
 
-                // Ενημέρωση 7 ημερών
                 const historyLog = document.getElementById('historyLog');
                 historyLog.innerHTML = '';
                 for (let i = 0; i < 7; i++) {
                     const d0 = new Date(); d0.setDate(d0.getDate() - i);
                     const d1 = new Date(); d1.setDate(d1.getDate() - (i + 1));
                     const diff = (getWeightAt21(d0) - getWeightAt21(d1)).toFixed(0);
-                    
                     const dayDiv = document.createElement('div');
                     dayDiv.className = 'history-day';
-                    dayDiv.innerHTML = `
-                        <div class="hist-date">${d0.toLocaleDateString('el-GR', {weekday:'short', day:'numeric'})}</div>
-                        <div class="hist-val" style="color:${diff >= 0 ? '#4caf50' : '#ff5252'}">${diff > 0 ? '+' : ''}${diff}g</div>
-                    `;
+                    dayDiv.innerHTML = `<div class="hist-date">${d0.toLocaleDateString('el-GR', {weekday:'short', day:'numeric'})}</div><div class="hist-val" style="color:${diff >= 0 ? '#4caf50' : '#ff5252'}">${diff > 0 ? '+' : ''}${diff}g</div>`;
                     historyLog.appendChild(dayDiv);
                 }
             } catch(e) { console.error(e); }
@@ -123,51 +109,52 @@
                 const lastFeed = data.feeds[data.feeds.length - 1];
                 const lastDate = new Date(lastFeed.created_at);
                 document.getElementById('mainUpdate').innerText = `🕒 Τελευταία μέτρηση: ${lastDate.toLocaleDateString('el-GR')} | ${lastDate.toLocaleTimeString('el-GR', {hour:'2-digit', minute:'2-digit'})}`;
-
                 const dashboard = document.getElementById('dashboard');
                 dashboard.innerHTML = '';
-                
                 Object.keys(fieldConfig).forEach(key => {
                     const conf = fieldConfig[key];
                     const vals = data.feeds.map(f => parseFloat(f[key])).filter(v => !isNaN(v));
-                    if(vals.length === 0) return;
-
                     const card = document.createElement('div');
                     card.className = 'card';
-                    card.innerHTML = `
-                        <div class="header-flex"><h3>${conf.label}</h3><span>${conf.icon}</span></div>
-                        <div class="value-display" style="color:${conf.color}">
-                            ${vals[vals.length-1].toFixed(conf.decimals)}<span style="font-size:0.4em; color:#666; margin-left:5px;">${conf.unit || ''}</span>
-                        </div>
-                        <div class="stats-row">
-                            <span>MIN: ${Math.min(...vals).toFixed(conf.decimals)}</span>
-                            <span>MAX: ${Math.max(...vals).toFixed(conf.decimals)}</span>
-                        </div>
-                        <div id="chart_${key}" class="chart-box"></div>
-                    `;
+                    card.innerHTML = `<div class="header-flex"><h3>${conf.label}</h3><span>${conf.icon}</span></div><div class="value-display" style="color:${conf.color}">${vals[vals.length-1].toFixed(conf.decimals)}<span style="font-size:0.4em; color:#666; margin-left:5px;">${conf.unit || ''}</span></div><div class="stats-row"><span>MIN: ${Math.min(...vals).toFixed(conf.decimals)}</span><span>MAX: ${Math.max(...vals).toFixed(conf.decimals)}</span></div><div id="chart_${key}" class="chart-box"></div>`;
                     dashboard.appendChild(card);
-                    drawChart(data.feeds, key, conf.label, conf.color);
+                    drawChart(data.feeds, key, conf);
                 });
             });
         }
 
-        function drawChart(feeds, key, label, color) {
+        function drawChart(feeds, key, conf) {
             const dataTable = new google.visualization.DataTable();
             dataTable.addColumn('string', 'Time');
-            dataTable.addColumn('number', label);
+            dataTable.addColumn('number', conf.label);
+            
+            // Προσθήκη στήλης για το στυλ (χρώμα βούλας) αν είναι το field5
+            if (conf.specialDots) {
+                dataTable.addColumn({type: 'string', role: 'style'});
+            }
+
             feeds.forEach(f => {
                 let v = parseFloat(f[key]);
-                if (!isNaN(v)) dataTable.addRow([new Date(f.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), v]);
+                if (!isNaN(v)) {
+                    if (conf.specialDots) {
+                        // Πράσινο αν v >= 0, Κόκκινο αν v < 0
+                        const dotColor = v >= 0 ? 'point { size: 6; fill-color: #4caf50; }' : 'point { size: 6; fill-color: #ff5252; }';
+                        dataTable.addRow([new Date(f.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), v, dotColor]);
+                    } else {
+                        dataTable.addRow([new Date(f.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), v]);
+                    }
+                }
             });
+
             new google.visualization.LineChart(document.getElementById('chart_'+key)).draw(dataTable, {
                 backgroundColor: 'transparent', curveType: 'function', legend: 'none',
-                pointSize: 5, 
+                pointSize: conf.specialDots ? 0 : 5, // Αν είναι specialDots, το pointSize ορίζεται από το style role
                 hAxis: { textPosition: 'none' }, vAxis: { gridlines: {color:'#2a2a2a'}, textStyle: {color:'#555'} },
-                colors: [color], chartArea: {width:'95%', height:'80%'}
+                colors: [conf.color], chartArea: {width:'95%', height:'80%'}
             });
         }
         setInterval(() => { loadData(); updateHistory(); }, 60000);
     </script>
 </body>
-  </html>
-  
+    </html>
+    
