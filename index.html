@@ -3,22 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beekeeping Pro - Static Dots Fixed</title>
+    <title>Beekeeping Pro - 15 Day History</title>
     <script src="https://www.gstatic.com/charts/loader.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #ffffff; --accent: #1a73e8; --border: #333; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
+        
         .main-yield-banner { background: linear-gradient(135deg, #1e1e1e, #2d2d2d); padding: 20px; border-radius: 15px; margin-bottom: 15px; text-align: center; border: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .main-yield-val { font-size: 2.8em; font-weight: bold; }
         .main-yield-label { font-size: 0.7em; color: #888; letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase; }
-        .history-container { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 10px; }
-        .history-day { background: var(--card); min-width: 85px; padding: 12px 8px; border-radius: 12px; border: 1px solid var(--border); text-align: center; flex: 1; }
-        .hist-date { font-size: 0.65em; color: #888; margin-bottom: 4px; }
-        .hist-val { font-size: 1em; font-weight: bold; }
+
+        /* Banner Ιστορικού 15 Ημερών - Scrollable */
+        .history-container { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 12px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+        .history-day { background: var(--card); min-width: 80px; padding: 12px 6px; border-radius: 12px; border: 1px solid var(--border); text-align: center; flex-shrink: 0; }
+        .hist-date { font-size: 0.6em; color: #888; margin-bottom: 4px; text-transform: uppercase; }
+        .hist-val { font-size: 0.95em; font-weight: bold; }
+
         .last-update { font-size: 0.75em; color: #ffca28; text-align: center; margin-bottom: 10px; background: #252525; padding: 8px; border-radius: 10px; border: 1px solid #444; }
         .toolbar { background: var(--card); padding: 10px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
         .grid-container { display: grid; grid-template-columns: 1fr; gap: 15px; }
         @media(min-width: 600px) { .grid-container { grid-template-columns: 1fr 1fr; } }
+        
         .card { background: var(--card); border-radius: 15px; padding: 15px; border-top: 5px solid var(--accent); }
         .header-flex { display: flex; justify-content: space-between; align-items: center; }
         h3 { margin: 0; font-size: 0.85em; color: #888; text-transform: uppercase; }
@@ -35,17 +40,18 @@
         <div id="24hYieldMain" class="main-yield-val">--</div>
     </div>
 
-    <div style="font-size: 0.7em; color: #888; margin-bottom: 5px; text-align: center; text-transform: uppercase;">Ιστορικό 7 Ημερών (gr)</div>
+    <div style="font-size: 0.7em; color: #888; margin-bottom: 5px; text-align: center; text-transform: uppercase;">Ιστορικό 15 Ημερών (gr)</div>
     <div class="history-container" id="historyLog"></div>
 
     <div class="last-update" id="mainUpdate">🕒 Φόρτωση...</div>
 
     <div class="toolbar">
-        <span style="font-size: 0.75em; color: #888;">Εύρος Γραφήματος:</span>
+        <span style="font-size: 0.75em; color: #888;">Εύρος Γραφημάτων:</span>
         <select id="resultsRange" onchange="loadData()">
             <option value="10">10 μετρήσεις</option>
             <option value="20" selected>20 μετρήσεις</option>
             <option value="50">50 μετρήσεις</option>
+            <option value="100">100 μετρήσεις</option>
         </select>
     </div>
 
@@ -69,10 +75,11 @@
 
         async function updateHistory() {
             try {
-                const res = await fetch(`https://api.thingspeak.com/channels/${channelID}/fields/1.json?api_key=${readAPIKey}&results=800`);
+                // Ζητάμε 1500 αποτελέσματα για να έχουμε βάθος 15+ ημερών
+                const res = await fetch(`https://api.thingspeak.com/channels/${channelID}/fields/1.json?api_key=${readAPIKey}&results=1500`);
                 const data = await res.json();
                 const feeds = data.feeds;
-                if(!feeds.length) return;
+                if(!feeds || !feeds.length) return;
 
                 const getWeightAt21 = (date) => {
                     const target = new Date(date);
@@ -83,37 +90,49 @@
                     return parseFloat(closest.field1);
                 };
 
+                // Κεντρικό Banner (Σήμερα vs Χθες)
                 const diffMain = (getWeightAt21(new Date()) - getWeightAt21(new Date().setDate(new Date().getDate()-1))).toFixed(0);
                 const mainEl = document.getElementById('24hYieldMain');
                 mainEl.innerText = `${diffMain > 0 ? '+' : ''}${diffMain} gr`;
                 mainEl.style.color = diffMain >= 0 ? '#4caf50' : '#ff5252';
 
+                // Ιστορικό 15 ημερών
                 const historyLog = document.getElementById('historyLog');
                 historyLog.innerHTML = '';
-                for (let i = 0; i < 7; i++) {
+                for (let i = 0; i < 15; i++) {
                     const d0 = new Date(); d0.setDate(d0.getDate() - i);
                     const d1 = new Date(); d1.setDate(d1.getDate() - (i + 1));
-                    const diff = (getWeightAt21(d0) - getWeightAt21(d1)).toFixed(0);
+                    const w0 = getWeightAt21(d0);
+                    const w1 = getWeightAt21(d1);
+                    const diff = (w0 - w1).toFixed(0);
+                    
                     const dayDiv = document.createElement('div');
                     dayDiv.className = 'history-day';
-                    dayDiv.innerHTML = `<div class="hist-date">${d0.toLocaleDateString('el-GR', {weekday:'short', day:'numeric'})}</div><div class="hist-val" style="color:${diff >= 0 ? '#4caf50' : '#ff5252'}">${diff > 0 ? '+' : ''}${diff}g</div>`;
+                    dayDiv.innerHTML = `
+                        <div class="hist-date">${d0.toLocaleDateString('el-GR', {weekday:'short', day:'numeric'})}</div>
+                        <div class="hist-val" style="color:${diff >= 0 ? '#4caf50' : '#ff5252'}">${diff > 0 ? '+' : ''}${diff}g</div>
+                    `;
                     historyLog.appendChild(dayDiv);
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error("History Error:", e); }
         }
 
         function loadData() {
             const num = document.getElementById('resultsRange').value;
             fetch(`https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPIKey}&results=${num}`)
             .then(res => res.json()).then(data => {
+                if(!data.feeds || !data.feeds.length) return;
                 const lastFeed = data.feeds[data.feeds.length - 1];
                 const lastDate = new Date(lastFeed.created_at);
                 document.getElementById('mainUpdate').innerText = `🕒 Τελευταία μέτρηση: ${lastDate.toLocaleDateString('el-GR')} | ${lastDate.toLocaleTimeString('el-GR', {hour:'2-digit', minute:'2-digit'})}`;
+                
                 const dashboard = document.getElementById('dashboard');
                 dashboard.innerHTML = '';
                 Object.keys(fieldConfig).forEach(key => {
                     const conf = fieldConfig[key];
                     const vals = data.feeds.map(f => parseFloat(f[key])).filter(v => !isNaN(v));
+                    if(vals.length === 0) return;
+
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.innerHTML = `<div class="header-flex"><h3>${conf.label}</h3><span>${conf.icon}</span></div><div class="value-display" style="color:${conf.color}">${vals[vals.length-1].toFixed(conf.decimals)}<span style="font-size:0.4em; color:#666; margin-left:5px;">${conf.unit || ''}</span></div><div class="stats-row"><span>MIN: ${Math.min(...vals).toFixed(conf.decimals)}</span><span>MAX: ${Math.max(...vals).toFixed(conf.decimals)}</span></div><div id="chart_${key}" class="chart-box"></div>`;
@@ -127,16 +146,12 @@
             const dataTable = new google.visualization.DataTable();
             dataTable.addColumn('string', 'Time');
             dataTable.addColumn('number', conf.label);
-            
-            if (conf.specialDots) {
-                dataTable.addColumn({type: 'string', role: 'style'});
-            }
+            if (conf.specialDots) dataTable.addColumn({type: 'string', role: 'style'});
 
             feeds.forEach(f => {
                 let v = parseFloat(f[key]);
                 if (!isNaN(v)) {
                     if (conf.specialDots) {
-                        // Πράσινο αν v >= 0, Κόκκινο αν v < 0, Μεγαλύτερη βούλα (size:7)
                         const dotColor = v >= 0 ? 'point { size: 7; fill-color: #4caf50; stroke-width: 0; }' : 'point { size: 7; fill-color: #ff5252; stroke-width: 0; }';
                         dataTable.addRow([new Date(f.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), v, dotColor]);
                     } else {
@@ -147,9 +162,8 @@
 
             new google.visualization.LineChart(document.getElementById('chart_'+key)).draw(dataTable, {
                 backgroundColor: 'transparent', curveType: 'function', legend: 'none',
-                pointSize: 5, // Βασικό μέγεθος για όλα τα γραφήματα
+                pointSize: 5,
                 hAxis: { textPosition: 'none' }, vAxis: { gridlines: {color:'#2a2a2a'}, textStyle: {color:'#555'} },
-                // Η ΓΡΑΜΜΗ ΣΤΟ FIELD 5 ΓΙΝΕΤΑΙ ΓΚΡΙ/ΜΠΛΕ (#607d8b)
                 colors: [conf.specialDots ? '#607d8b' : conf.color], 
                 chartArea: {width:'95%', height:'80%'}
             });
