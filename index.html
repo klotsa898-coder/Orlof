@@ -1,46 +1,52 @@
-<!DOCTYPE html>
+
+    <!DOCTYPE html>
 <html lang="el">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beekeeping Pro - 15 Day Deep Analysis</title>
+    <title>Beekeeping Pro - 22:00 Ref & 15 Day Analysis</title>
     <script src="https://www.gstatic.com/charts/loader.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #ffffff; --accent: #1a73e8; --border: #333; --up: #4caf50; --down: #ff5252; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
         
         /* Banner 24h */
-        .main-yield-banner { background: linear-gradient(135deg, #1e1e1e, #2d2d2d); padding: 20px; border-radius: 15px; margin-bottom: 10px; text-align: center; border: 1px solid var(--border); }
+        .main-yield-banner { background: linear-gradient(135deg, #1e1e1e, #2d2d2d); padding: 20px; border-radius: 15px; margin-bottom: 10px; text-align: center; border: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .main-yield-val { font-size: 2.8em; font-weight: bold; }
         .main-yield-label { font-size: 0.7em; color: #888; letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase; }
 
         /* Συνολική Διαφορά 15 ημερών */
-        .total-15d-box { background: #252525; padding: 12px; border-radius: 12px; margin-bottom: 15px; text-align: center; border: 1px dashed #444; }
+        .total-15d-box { background: #1a1a1a; padding: 12px; border-radius: 12px; margin-bottom: 15px; text-align: center; border: 1px dashed #444; }
         .total-15d-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; margin-bottom: 3px; }
         .total-15d-val { font-size: 1.4em; font-weight: bold; }
 
         /* Scrollable History */
-        .history-container { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 12px; scrollbar-width: thin; }
+        .history-container { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 12px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
         .history-day { background: var(--card); min-width: 80px; padding: 12px 6px; border-radius: 12px; border: 1px solid var(--border); text-align: center; flex-shrink: 0; }
         .hist-date { font-size: 0.6em; color: #888; margin-bottom: 4px; text-transform: uppercase; }
         .hist-val { font-size: 0.95em; font-weight: bold; }
 
         .last-update { font-size: 0.75em; color: #ffca28; text-align: center; margin-bottom: 10px; background: #252525; padding: 8px; border-radius: 10px; border: 1px solid #444; }
+        
+        /* Toolbar με επιλογή μετρήσεων */
+        .toolbar { background: var(--card); padding: 10px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+        
         .grid-container { display: grid; grid-template-columns: 1fr; gap: 15px; }
         @media(min-width: 600px) { .grid-container { grid-template-columns: 1fr 1fr; } }
         
-        .card { background: var(--card); border-radius: 15px; padding: 15px; border-top: 5px solid var(--accent); position: relative; }
+        .card { background: var(--card); border-radius: 15px; padding: 15px; border-top: 5px solid var(--accent); }
         .header-flex { display: flex; justify-content: space-between; align-items: center; }
         h3 { margin: 0; font-size: 0.85em; color: #888; text-transform: uppercase; }
         .value-display { font-size: 2.2em; font-weight: bold; margin: 5px 0; display: flex; align-items: baseline; }
         .stats-row { display: flex; gap: 10px; font-size: 0.75em; color: #777; margin-bottom: 10px; border-top: 1px solid #2a2a2a; padding-top: 5px; }
         .chart-box { width: 100%; height: 160px; }
+        select { background: #333; color: white; border: none; padding: 8px; border-radius: 8px; font-size: 11px; outline: none; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="main-yield-banner">
-        <div class="main-yield-label">ΔΙΑΦΟΡΑ 24Ω (21:00-21:00)</div>
+        <div class="main-yield-label">ΔΙΑΦΟΡΑ 24Ω (22:00-22:00)</div>
         <div id="24hYieldMain" class="main-yield-val">--</div>
     </div>
 
@@ -53,6 +59,16 @@
     <div class="history-container" id="historyLog"></div>
 
     <div class="last-update" id="mainUpdate">🕒 Φόρτωση...</div>
+
+    <div class="toolbar">
+        <span style="font-size: 0.75em; color: #888;">Προβολή στο Διάγραμμα:</span>
+        <select id="resultsRange" onchange="loadData()">
+            <option value="10">10 μετρήσεις</option>
+            <option value="20" selected>20 μετρήσεις</option>
+            <option value="30">30 μετρήσεις</option>
+            <option value="50">50 μετρήσεις</option>
+        </select>
+    </div>
 
     <div id="dashboard" class="grid-container"></div>
 
@@ -79,10 +95,12 @@
                 const feeds = data.feeds;
                 if(!feeds) return;
 
-                const getWeightAt21 = (date) => {
+                const getWeightAt22 = (date) => {
                     const target = new Date(date);
-                    target.setHours(21, 0, 0);
-                    const closest = feeds.reduce((prev, curr) => Math.abs(new Date(curr.created_at) - target) < Math.abs(new Date(prev.created_at) - target) ? curr : prev);
+                    target.setHours(22, 0, 0); // Ρυθμίστηκε στις 22:00
+                    const closest = feeds.reduce((prev, curr) => 
+                        Math.abs(new Date(curr.created_at) - target) < Math.abs(new Date(prev.created_at) - target) ? curr : prev
+                    );
                     return parseFloat(closest.field1);
                 };
 
@@ -93,10 +111,10 @@
                 for (let i = 0; i < 15; i++) {
                     const d0 = new Date(); d0.setDate(d0.getDate() - i);
                     const d1 = new Date(); d1.setDate(d1.getDate() - (i + 1));
-                    const diff = parseFloat((getWeightAt21(d0) - getWeightAt21(d1)).toFixed(0));
+                    const diff = parseFloat((getWeightAt22(d0) - getWeightAt22(d1)).toFixed(0));
                     sum15 += diff;
 
-                    if(i === 0) { // Update Main Banner
+                    if(i === 0) {
                         const mainEl = document.getElementById('24hYieldMain');
                         mainEl.innerText = `${diff > 0 ? '+' : ''}${diff} gr`;
                         mainEl.style.color = diff >= 0 ? '#4caf50' : '#ff5252';
@@ -116,8 +134,10 @@
         }
 
         function loadData() {
-            fetch(`https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPIKey}&results=20`)
+            const num = document.getElementById('resultsRange').value;
+            fetch(`https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPIKey}&results=${num}`)
             .then(res => res.json()).then(data => {
+                if(!data.feeds || !data.feeds.length) return;
                 const lastFeed = data.feeds[data.feeds.length - 1];
                 const lastDate = new Date(lastFeed.created_at);
                 document.getElementById('mainUpdate').innerText = `🕒 Τελευταία: ${lastDate.toLocaleTimeString('el-GR', {hour:'2-digit', minute:'2-digit'})}`;
@@ -127,6 +147,7 @@
                 Object.keys(fieldConfig).forEach(key => {
                     const conf = fieldConfig[key];
                     const vals = data.feeds.map(f => parseFloat(f[key])).filter(v => !isNaN(v));
+                    if(!vals.length) return;
                     const lastVal = vals[vals.length-1];
                     
                     let displayColor = conf.color;
@@ -179,5 +200,5 @@
         setInterval(() => { loadData(); updateHistory(); }, 60000);
     </script>
 </body>
-        </html>
-    
+</html>
+
