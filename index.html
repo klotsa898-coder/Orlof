@@ -3,31 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beekeeping Pro - Reset & 22:00 Ref</title>
+    <title>Beekeeping Pro - Smart Reset Edition</title>
     <script src="https://www.gstatic.com/charts/loader.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #ffffff; --accent: #1a73e8; --border: #333; --up: #4caf50; --down: #ff5252; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
         
-        .main-yield-banner { background: linear-gradient(135deg, #1e1e1e, #2d2d2d); padding: 25px; border-radius: 15px; margin-bottom: 10px; text-align: center; border: 1px solid var(--border); }
-        .main-yield-val { font-size: 3em; font-weight: bold; }
+        /* Banner 24h */
+        .main-yield-banner { background: linear-gradient(135deg, #1e1e1e, #2d2d2d); padding: 25px; border-radius: 15px; margin-bottom: 10px; text-align: center; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+        .main-yield-val { font-size: 3.2em; font-weight: bold; }
         .main-yield-label { font-size: 0.75em; color: #888; letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; }
 
-        .total-15d-box { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; text-align: center; border: 1px dashed #444; position: relative; }
+        /* Reset & Total Box */
+        .total-15d-box { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center; border: 1px dashed #444; }
         .total-15d-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; margin-bottom: 5px; }
-        .total-15d-val { font-size: 1.6em; font-weight: bold; margin-bottom: 10px; }
-        
-        /* Κουμπί Reset */
-        .reset-btn { background: #c62828; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.65em; cursor: pointer; text-transform: uppercase; font-weight: bold; transition: 0.3s; }
-        .reset-btn:hover { background: #ff5252; }
+        .total-15d-val { font-size: 1.6em; font-weight: bold; margin-bottom: 12px; }
+        .reset-btn { background: #c62828; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 0.7em; cursor: pointer; text-transform: uppercase; font-weight: bold; transition: 0.2s; }
+        .reset-btn:active { transform: scale(0.95); background: #b71c1c; }
 
-        .history-container { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 12px; scrollbar-width: thin; }
-        .history-day { background: var(--card); min-width: 85px; padding: 12px 6px; border-radius: 12px; border: 1px solid var(--border); text-align: center; flex-shrink: 0; }
+        /* History Scroll */
+        .history-container { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 12px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+        .history-day { background: var(--card); min-width: 90px; padding: 12px 6px; border-radius: 12px; border: 1px solid var(--border); text-align: center; flex-shrink: 0; }
         .hist-date { font-size: 0.65em; color: #888; margin-bottom: 4px; text-transform: uppercase; }
-        .hist-val { font-size: 1em; font-weight: bold; }
+        .hist-val { font-size: 1.1em; font-weight: bold; }
 
         .last-update { font-size: 0.75em; color: #ffca28; text-align: center; margin-bottom: 10px; background: #252525; padding: 8px; border-radius: 10px; border: 1px solid #444; }
-        .toolbar { background: var(--card); padding: 10px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+        
+        .toolbar { background: var(--card); padding: 12px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
         
         .grid-container { display: grid; grid-template-columns: 1fr; gap: 15px; }
         @media(min-width: 600px) { .grid-container { grid-template-columns: 1fr 1fr; } }
@@ -38,26 +40,26 @@
         .value-display { font-size: 2.2em; font-weight: bold; margin: 5px 0; display: flex; align-items: baseline; }
         .stats-row { display: flex; gap: 10px; font-size: 0.75em; color: #777; margin-bottom: 10px; border-top: 1px solid #2a2a2a; padding-top: 5px; }
         .chart-box { width: 100%; height: 160px; }
-        select { background: #333; color: white; border: none; padding: 8px; border-radius: 8px; font-size: 11px; }
+        select { background: #333; color: white; border: none; padding: 8px; border-radius: 8px; font-size: 11px; outline: none; }
     </style>
 </head>
 <body>
 
     <div class="main-yield-banner">
-        <div class="main-yield-label">ΕΠΙΣΗΜΗ ΔΙΑΦΟΡΑ ΗΜΕΡΑΣ (22:00)</div>
+        <div class="main-yield-label">ΕΠΙΣΗΜΗ ΔΙΑΦΟΡΑ 24Ω (22:00)</div>
         <div id="24hYieldMain" class="main-yield-val">--</div>
     </div>
 
     <div class="total-15d-box">
-        <div class="total-15d-label">Συνολική Μεταβολή Νέας Τοποθεσίας</div>
+        <div class="total-15d-label">Συνολική Μεταβολή Τοποθεσίας</div>
         <div id="total15d" class="total-15d-val">--</div>
-        <button class="reset-btn" onclick="resetHistory()">Reset 15 Ημέρου (Νέα Τοποθεσία)</button>
+        <button class="reset-btn" onclick="resetHistory()">Reset (Νέα Τοποθεσία)</button>
     </div>
 
-    <div style="font-size: 0.7em; color: #888; margin-bottom: 5px; text-align: center; text-transform: uppercase;">Ιστορικό (gr)</div>
+    <div style="font-size: 0.7em; color: #888; margin-bottom: 5px; text-align: center; text-transform: uppercase;">Ιστορικό Νέας Τοποθεσίας (gr)</div>
     <div class="history-container" id="historyLog"></div>
 
-    <div class="last-update" id="mainUpdate">🕒 Αναμονή δεδομένων...</div>
+    <div class="last-update" id="mainUpdate">🕒 Φόρτωση δεδομένων...</div>
 
     <div class="toolbar">
         <span style="font-size: 0.75em; color: #888;">Προβολή στο Διάγραμμα:</span>
@@ -87,9 +89,8 @@
         google.charts.load('current', {'packages':['corechart']});
         google.charts.setOnLoadCallback(() => { loadData(); updateHistory(); });
 
-        // Λειτουργία Reset
         function resetHistory() {
-            if(confirm("Είστε σίγουροι; Ο μέσος όρος θα υπολογίζεται από σήμερα και μετά.")) {
+            if(confirm("Προσοχή! Θα μηδενιστεί το ιστορικό 15 ημερών για τη νέα τοποθεσία. Να συνεχίσω;")) {
                 const now = new Date();
                 localStorage.setItem('beekeeping_reset_date', now.toISOString());
                 updateHistory();
@@ -106,12 +107,13 @@
                 const resetDateStr = localStorage.getItem('beekeeping_reset_date');
                 const resetDate = resetDateStr ? new Date(resetDateStr) : null;
 
-                const getWeightAt22 = (date) => {
+                const getWeightAt22 = (date, allowPastReset = false) => {
                     const target = new Date(date);
                     target.setHours(22, 0, 0);
                     
-                    // Έλεγχος αν η ημερομηνία είναι πριν το Reset
-                    if(resetDate && target < resetDate) return null;
+                    // Αν είναι για ιστορικό, κόβουμε τα πάντα πριν το Reset. 
+                    // Αν είναι για τη σύγκριση 24ωρου (allowPastReset), επιτρέπουμε 1 μέρα πίσω.
+                    if(!allowPastReset && resetDate && target < resetDate) return null;
 
                     const now = new Date();
                     if(target.toDateString() === now.toDateString() && now.getHours() < 22) return null;
@@ -132,8 +134,9 @@
                     const dToday = new Date(); dToday.setDate(dToday.getDate() - i);
                     const dYesterday = new Date(); dYesterday.setDate(dYesterday.getDate() - (i + 1));
                     
-                    const wToday = getWeightAt22(dToday);
-                    const wYesterday = getWeightAt22(dYesterday);
+                    const wToday = getWeightAt22(dToday, false);
+                    // allowPastReset = true για να μην "τυφλώνεται" το banner την πρώτη μέρα
+                    const wYesterday = getWeightAt22(dYesterday, true); 
                     
                     let diffText = "--";
                     let diffVal = 0;
@@ -152,13 +155,15 @@
                         mainEl.style.color = (diffText === "--") ? "#555" : color;
                     }
 
-                    const dayDiv = document.createElement('div');
-                    dayDiv.className = 'history-day';
-                    dayDiv.innerHTML = `
-                        <div class="hist-date">${dToday.toLocaleDateString('el-GR', {weekday:'short', day:'numeric'})}</div>
-                        <div class="hist-val" style="color:${color}">${diffText}</div>
-                    `;
-                    historyLog.appendChild(dayDiv);
+                    if (wToday !== null) {
+                        const dayDiv = document.createElement('div');
+                        dayDiv.className = 'history-day';
+                        dayDiv.innerHTML = `
+                            <div class="hist-date">${dToday.toLocaleDateString('el-GR', {weekday:'short', day:'numeric'})}</div>
+                            <div class="hist-val" style="color:${color}">${diffText}</div>
+                        `;
+                        historyLog.appendChild(dayDiv);
+                    }
                 }
 
                 const total15El = document.getElementById('total15d');
@@ -168,7 +173,6 @@
             } catch(e) { console.error(e); }
         }
 
-        // Η loadData παραμένει ίδια με την επιλογή εύρους μετρήσεων
         function loadData() {
             const num = document.getElementById('resultsRange').value;
             fetch(`https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPIKey}&results=${num}`)
