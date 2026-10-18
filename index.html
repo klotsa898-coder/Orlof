@@ -31,8 +31,7 @@
         .stats-row { display: flex; gap: 10px; font-size: 0.75em; color: #777; margin-bottom: 10px; border-top: 1px solid #2a2a2a; padding-top: 5px; }
         .chart-box { width: 100%; height: 160px; }
         
-        .wide-card { background: var(--card); border-radius: 15px; padding: 15px; margin-top: 15px; border-top: 5px solid #4caf50; }
-        .wide-chart-box { width: 100%; height: 280px; }
+        .wide-card { background: var(--card); border-radius: 15px; padding: 15px; margin-top: 15px; border-top: 5px solid #ff9800; }
         .legend-box { display: flex; justify-content: center; gap: 15px; font-size: 0.8em; margin-top: 5px; }
         .legend-item { display: flex; align-items: center; gap: 5px; }
 
@@ -51,15 +50,15 @@
 
     <div class="last-update" id="mainUpdate">🕒 Φόρτωση...</div>
 
+    <!-- ΝΕΑ ΚΑΡΤΑ ΔΙΑΦΟΡΑΣ ΑΠΟ 21:00 ΧΘΕΣ -->
     <div class="wide-card">
         <div class="header-flex">
-            <h3>Σύγκριση Πορείας Βάρους (24h)</h3>
+            <h3>Διαφορά Τρέχουσας Μέτρησης από Χθες στις 21:00</h3>
             <span>⚖️</span>
         </div>
-        <div id="compare_chart" class="wide-chart-box"></div>
-        <div class="legend-box">
-            <div class="legend-item"><span style="color:#ffca28; font-size:1.2em;">●</span> Χθες</div>
-            <div class="legend-item"><span style="color:#4caf50; font-size:1.2em;">●</span> Σήμερα</div>
+        <div style="text-align: center; padding: 10px 0;">
+            <div id="diffSince21Val" style="font-size: 2.8em; font-weight: bold;">--</div>
+            <div style="font-size: 0.75em; color: #888; margin-top: 5px;" id="diffSince21Sub">Σύγκριση τρέχουσας τιμής με το κλείσιμο 21:00 χθες</div>
         </div>
     </div>
 
@@ -104,7 +103,6 @@
                     target.setHours(21, 0, 0, 0);
 
                     const now = new Date();
-                    // Αν ζητάμε το σημερινό κουτάκι αλλά δεν έχει πάει ακόμα 21:00, το αφήνουμε κενό
                     if (target.toDateString() === now.toDateString() && now.getHours() < 21) {
                         return null;
                     }
@@ -161,6 +159,28 @@
                 document.getElementById('24hYieldMain').innerText = realtimeDiffText;
                 document.getElementById('24hYieldMain').style.color = realtimeColor;
 
+                // ΥΠΟΛΟΓΙΣΜΟΣ ΔΙΑΦΟΡΑΣ ΤΡΕΧΟΥΣΑΣ ΜΕΤΡΗΣΗΣ ΑΠΟ 21:00 ΧΘΕΣ
+                let diffSince21Text = "-- gr";
+                let diffSince21Color = "#888";
+
+                if (latestFeed) {
+                    const currentWeight = Math.round(parseFloat(latestFeed.field1));
+                    const yestDate = new Date(); 
+                    yestDate.setDate(yestDate.getDate() - 1);
+                    const weightYest21 = getWeightAt21(yestDate);
+
+                    if (weightYest21 !== null) {
+                        const diff21 = currentWeight - weightYest21;
+                        if (Math.abs(diff21) < 5000) {
+                            diffSince21Text = `${diff21 > 0 ? '+' : ''}${diff21} gr`;
+                            diffSince21Color = diff21 >= 0 ? '#4caf50' : '#ff5252';
+                        }
+                    }
+                }
+
+                document.getElementById('diffSince21Val').innerText = diffSince21Text;
+                document.getElementById('diffSince21Val').style.color = diffSince21Color;
+
                 // ΓΕΜΙΣΜΑ ΙΣΤΟΡΙΚΟΥ 15 ΗΜΕΡΩΝ (Σύγκριση 21:00 με 21:00 της προηγούμενης)
                 const historyLog = document.getElementById('historyLog');
                 historyLog.innerHTML = '';
@@ -185,68 +205,6 @@
                         dayDiv.innerHTML = `<div class="hist-date">${dayLabel}</div><div class="hist-val" style="color:#666">--</div>`;
                     }
                     historyLog.appendChild(dayDiv);
-                }
-
-                // ΓΡΑΦΗΜΑ ΣΥΓΚΡΙΣΗΣ (ΚΑΘΑΡΟΙ ΑΚΕΡΑΙΟΙ)
-                const compareTable = new google.visualization.DataTable();
-                compareTable.addColumn('string', 'Ώρα');
-                compareTable.addColumn('number', 'Χθες');
-                compareTable.addColumn('number', 'Σήμερα');
-
-                const todayStr = new Date().toDateString();
-                const yestDate = new Date(); yestDate.setDate(yestDate.getDate() - 1);
-                const yestStr = yestDate.toDateString();
-
-                let hourlyData = {};
-                for(let h=0; h<24; h++) {
-                    let hourKey = h.toString().padStart(2, '0') + ':00';
-                    hourlyData[hourKey] = { yest: null, today: null };
-                }
-
-                feeds.forEach(f => {
-                    if(f.field1 === null || isNaN(parseFloat(f.field1))) return;
-                    const fDate = new Date(f.created_at);
-                    const fHourStr = fDate.getHours().toString().padStart(2, '0') + ':00';
-                    const fDateStr = fDate.toDateString();
-
-                    const weightVal = Math.round(parseFloat(f.field1));
-
-                    if(fDateStr === yestStr) {
-                        hourlyData[fHourStr].yest = weightVal;
-                    } else if(fDateStr === todayStr) {
-                        hourlyData[fHourStr].today = weightVal;
-                    }
-                });
-
-                let lastYest = null, lastToday = null;
-                Object.keys(hourlyData).forEach(hour => {
-                    if(hourlyData[hour].yest !== null) lastYest = hourlyData[hour].yest;
-                    else if(lastYest !== null) hourlyData[hour].yest = lastYest;
-
-                    if(hourlyData[hour].today !== null) lastToday = hourlyData[hour].today;
-                    else if(lastToday !== null && parseInt(hour) <= new Date().getHours()) hourlyData[hour].today = lastToday;
-                    
-                    if(parseInt(hour) > new Date().getHours()) hourlyData[hour].today = null;
-                });
-
-                Object.keys(hourlyData).sort().forEach(hour => {
-                    compareTable.addRow([hour, hourlyData[hour].yest, hourlyData[hour].today]);
-                });
-
-                const compChartEl = document.getElementById('compare_chart');
-                if(compChartEl) {
-                    new google.visualization.LineChart(compChartEl).draw(compareTable, {
-                        backgroundColor: 'transparent', curveType: 'function', legend: 'none', pointSize: 2,
-                        hAxis: { textStyle: {color:'#888', fontSize: 10}, showTextEvery: 3 },
-                        vAxis: { 
-                            gridlines: {color:'#2a2a2a'}, 
-                            textStyle: {color:'#888'}, 
-                            format: '#####',
-                            viewWindowMode: 'pretty'
-                        },
-                        colors: ['#ffca28', '#4caf50'], 
-                        chartArea: {width:'85%', height:'80%'}
-                    });
                 }
 
             } catch(e) { console.error(e); }
@@ -322,5 +280,4 @@
         setInterval(() => { loadData(); updateHivesInfo(); }, 60000);
     </script>
 </body>
-    </html>
-    
+</html>
