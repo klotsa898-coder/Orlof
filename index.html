@@ -9,10 +9,6 @@
         :root { --bg: #121212; --card: #1e1e1e; --text: #ffffff; --accent: #1a73e8; --border: #333; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
         
-        .main-yield-banner { background: linear-gradient(135deg, #1e1e1e, #2d2d2d); padding: 20px; border-radius: 15px; margin-bottom: 15px; text-align: center; border: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .main-yield-val { font-size: 2.8em; font-weight: bold; }
-        .main-yield-label { font-size: 0.7em; color: #888; letter-spacing: 1px; margin-bottom: 5px; }
-
         .history-container { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 10px; }
         .history-day { background: var(--card); min-width: 85px; padding: 12px 8px; border-radius: 12px; border: 1px solid var(--border); text-align: center; flex: 1; }
         .hist-date { font-size: 0.65em; color: #888; margin-bottom: 4px; }
@@ -31,26 +27,14 @@
         .stats-row { display: flex; gap: 10px; font-size: 0.75em; color: #777; margin-bottom: 10px; border-top: 1px solid #2a2a2a; padding-top: 5px; }
         .chart-box { width: 100%; height: 160px; }
         
-        .wide-card { background: var(--card); border-radius: 15px; padding: 15px; margin-top: 15px; border-top: 5px solid #ff9800; }
-        .legend-box { display: flex; justify-content: center; gap: 15px; font-size: 0.8em; margin-top: 5px; }
-        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .wide-card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 15px; border-top: 5px solid #ff9800; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 
         select { background: #333; color: white; border: none; padding: 8px; border-radius: 8px; font-size: 11px; }
     </style>
 </head>
 <body>
 
-    <div class="main-yield-banner">
-        <div class="main-yield-label">ΖΩΝΤΑΝΗ ΔΙΑΦΟΡΑ 24ΩΡΟΥ (ΤΡΕΧΟΥΣΑ vs ΕΧΘΕΣ ΙΔΙΑ ΩΡΑ)</div>
-        <div id="24hYieldMain" class="main-yield-val">--</div>
-    </div>
-
-    <div style="font-size: 0.7em; color: #888; margin-bottom: 5px; text-align: center;">ΙΣΤΟΡΙΚΟ 15 ΗΜΕΡΩΝ (21:00 - 21:00 σε gr)</div>
-    <div class="history-container" id="historyLog"></div>
-
-    <div class="last-update" id="mainUpdate">🕒 Φόρτωση...</div>
-
-    <!-- ΝΕΑ ΚΑΡΤΑ ΔΙΑΦΟΡΑΣ ΑΠΟ 21:00 ΧΘΕΣ -->
+    <!-- ΝΕΑ ΚΑΡΤΑ ΔΙΑΦΟΡΑΣ ΑΠΟ 21:00 ΧΘΕΣ ΣΤΗΝ ΚΟΡΥΦΗ -->
     <div class="wide-card">
         <div class="header-flex">
             <h3>Διαφορά Τρέχουσας Μέτρησης από Χθες στις 21:00</h3>
@@ -62,7 +46,12 @@
         </div>
     </div>
 
-    <div class="toolbar" style="margin-top:15px;">
+    <div style="font-size: 0.7em; color: #888; margin-bottom: 5px; text-align: center;">ΙΣΤΟΡΙΚΟ 15 ΗΜΕΡΩΝ (21:00 - 21:00 σε gr)</div>
+    <div class="history-container" id="historyLog"></div>
+
+    <div class="last-update" id="mainUpdate">🕒 Φόρτωση...</div>
+
+    <div class="toolbar">
         <span style="font-size: 0.75em; color: #888;">Προβολή τρεχουσών μετρήσεων:</span>
         <select id="resultsRange" onchange="loadData()">
             <option value="10">10 μετρήσεις</option>
@@ -124,40 +113,8 @@
                     return Math.round(parseFloat(closest.field1));
                 };
 
-                // ΖΩΝΤΑΝΗ ΔΙΑΦΟΡΑ 24ΩΡΟΥ (Τρέχουσα τιμή vs χθεσινή ίδια ώρα)
                 const validFeeds = feeds.filter(f => f.field1 !== null && !isNaN(parseFloat(f.field1)));
                 const latestFeed = validFeeds[validFeeds.length - 1];
-                
-                let realtimeDiffText = "-- gr";
-                let realtimeColor = "#888";
-
-                if (latestFeed) {
-                    const currentWeight = Math.round(parseFloat(latestFeed.field1));
-                    const currentTime = new Date(latestFeed.created_at);
-                    const targetPastTime = new Date(currentTime.getTime() - (24 * 60 * 60 * 1000));
-                    
-                    const pastFeeds = feeds.filter(f => f.field1 !== null && !isNaN(parseFloat(f.field1)));
-                    if (pastFeeds.length > 0) {
-                        const closestPast = pastFeeds.reduce((prev, curr) => {
-                            const prevDiff = Math.abs(new Date(prev.created_at) - targetPastTime);
-                            const currDiff = Math.abs(new Date(curr.created_at) - targetPastTime);
-                            return currDiff < prevDiff ? curr : prev;
-                        });
-                        
-                        if (Math.abs(new Date(closestPast.created_at) - targetPastTime) < (2 * 60 * 60 * 1000)) {
-                            const pastWeight = Math.round(parseFloat(closestPast.field1));
-                            const diff = currentWeight - pastWeight;
-                            
-                            if (Math.abs(diff) < 5000) {
-                                realtimeDiffText = `${diff > 0 ? '+' : ''}${diff} gr`;
-                                realtimeColor = diff >= 0 ? '#4caf50' : '#ff5252';
-                            }
-                        }
-                    }
-                }
-
-                document.getElementById('24hYieldMain').innerText = realtimeDiffText;
-                document.getElementById('24hYieldMain').style.color = realtimeColor;
 
                 // ΥΠΟΛΟΓΙΣΜΟΣ ΔΙΑΦΟΡΑΣ ΤΡΕΧΟΥΣΑΣ ΜΕΤΡΗΣΗΣ ΑΠΟ 21:00 ΧΘΕΣ
                 let diffSince21Text = "-- gr";
